@@ -1,0 +1,1217 @@
+{
+  "name": "Hiring – Google Sheet → Notion (Upgraded)",
+  "nodes": [
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "1eae2f06-5026-42d4-8eca-aa6afda93094",
+              "leftValue": "={{ $('Normalize Form Data').item.json.is_internship }}",
+              "rightValue": "\"Internship\"",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        272,
+        624
+      ],
+      "id": "859ef5a2-52c1-4c0f-9216-fc32d6a57616",
+      "name": "Is Internship"
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "databaseId": {
+          "__rl": true,
+          "value": "YOUR_NOTION_DATABASE_ID",
+          "mode": "list",
+          "cachedResultName": "Hiring Pipeline",
+          "cachedResultUrl": "https://www.notion.so/YOUR_NOTION_DATABASE_ID"
+        },
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Candidate Name|title",
+              "title": "={{ $json.candidate_name }}"
+            },
+            {
+              "key": "Date Applied|date",
+              "includeTime": false,
+              "date": "={{ $json.date_applied }}",
+              "timezone": "Asia/Karachi"
+            },
+            {
+              "key": "Email|email",
+              "emailValue": "={{ $json.email }}"
+            },
+            {
+              "key": "Position Type|select",
+              "selectValue": "={{ $json.position_type }}"
+            },
+            {
+              "key": "Resume / CV|files",
+              "fileUrls": {
+                "fileUrl": [
+                  {
+                    "name": "Resume",
+                    "url": "={{ $json.resume_url }}"
+                  }
+                ]
+              }
+            },
+            {
+              "key": "Role|select",
+              "selectValue": "={{ $json.role }}"
+            },
+            {
+              "key": "Source|select",
+              "selectValue": "={{ $json.source }}"
+            },
+            {
+              "key": "Status|select",
+              "selectValue": "={{ $json.status }}"
+            },
+            {
+              "key": "WhatsApp|rich_text",
+              "textContent": "={{ $json.whatsapp }}"
+            },
+            {
+              "key": "Work Type|select",
+              "selectValue": "={{ $json.work_type }}"
+            },
+            {
+              "key": "Timestamp|date",
+              "date": "={{ $json.timestamp }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        -352,
+        624
+      ],
+      "id": "5b7397ae-77f0-44e0-9bd6-74c5fefbe57b",
+      "name": "Create a database page",
+      "retryOnFail": true,
+      "credentials": {
+        "notionApi": {
+          "id": "YOUR_NOTION_CREDENTIAL_ID",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const output = [];\n\nconst possibleFields = [\n  'Upload Resume / CV',\n  'Portfolio Work',\n];\n\nconst driveIdRegex = /(?:id=|\\/d\\/)([a-zA-Z0-9_-]{20,})/;\n\nfor (const item of $input.all()) {\n\n  const row = item.json.body;\n\n  for (const field of possibleFields) {\n\n    const value = row[field];\n    if (!value) continue;\n\n    const links = value.split(/\\s+/);\n\n    for (const link of links) {\n\n      const match = link.match(driveIdRegex);\n\n      if (match && match[1]) {\n        output.push({\n          json: {\n            fileId: match[1],\n            sourceField: field,\n            originalLink: link\n          }\n        });\n      }\n\n    }\n  }\n}\n\nif (output.length === 0) {\n  return [{ json: { skip: true } }];\n}\n\nreturn output;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1120,
+        -128
+      ],
+      "id": "191bdcd3-a0fd-44e9-a9c8-22e89ba1610a",
+      "name": "Process Links for Drive",
+      "alwaysOutputData": true,
+      "executeOnce": false,
+      "retryOnFail": false
+    },
+    {
+      "parameters": {
+        "operation": "share",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.fileId }}",
+          "mode": "id"
+        },
+        "permissionsUi": {
+          "permissionsValues": {
+            "role": "reader",
+            "type": "anyone"
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -912,
+        -128
+      ],
+      "id": "1ee816f1-aa92-4e80-857b-62854b5053d2",
+      "name": "Change Drive Files Permissions",
+      "retryOnFail": true,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "YOUR_GOOGLE_DRIVE_CREDENTIAL_ID",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "c41a8272-0c89-4621-81b4-b23c0a61acb2",
+              "leftValue": "candidate_name",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -1472,
+        416
+      ],
+      "id": "9e67f0ee-40eb-4bd0-8c09-f5886c59803b",
+      "name": "If"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -1280,
+        -128
+      ],
+      "id": "02bd8367-3f62-4048-9a55-0f7c9227a643",
+      "name": "Wait",
+      "webhookId": "YOUR_WAIT_WEBHOOK_ID"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "YOUR_WEBHOOK_PATH",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1664,
+        416
+      ],
+      "id": "b161f632-329b-48ac-b2fa-65d56d05113f",
+      "name": "Webhook",
+      "webhookId": "YOUR_WEBHOOK_ID"
+    },
+    {
+      "parameters": {
+        "resource": "block",
+        "blockId": {
+          "__rl": true,
+          "value": "={{ $('Create a database page').item.json.id }}",
+          "mode": "id"
+        },
+        "blockUi": {
+          "blockValues": [
+            {
+              "type": "heading_3",
+              "textContent": "🎓 Internship Details"
+            },
+            {
+              "textContent": "=Student / Graduate Status: {{ $('Normalize Form Data').item.json.form_data[\"Are you currently a student or a recent graduate?\"] || \"Not Provided\" }}\nOffice Availability: {{ $('Normalize Form Data').item.json.form_data[\"Are you available to work from our office on a daily basis?\"] || \"Not Provided\" }}\n3-Month Commitment: {{ $('Normalize Form Data').item.json.form_data[\"Are you willing to commit to a minimum 3 month internship?\"] || \"Not Provided\" }}\n\nAdditional Notes: {{ $('Normalize Form Data').item.json.form_data[\"Anything else you’d like us to know? (Optional)\"] || \"None\" }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        720,
+        608
+      ],
+      "id": "ac2d0cb3-2e60-477c-9979-f8fee0a39054",
+      "name": "Internship Append",
+      "credentials": {
+        "notionApi": {
+          "id": "YOUR_NOTION_CREDENTIAL_ID",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-goog-api-key",
+              "value": "YOUR_GEMINI_API_KEY"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "contents",
+              "value": "={{$json.contents}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -144,
+        400
+      ],
+      "id": "d9dbb6d3-6a61-4a91-8599-e0613b75bf00",
+      "name": "Gemini Evaluation",
+      "retryOnFail": true,
+      "waitBetweenTries": 5000,
+      "alwaysOutputData": true,
+      "maxTries": 5,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{$json.fileId}}",
+          "mode": "id"
+        },
+        "options": {
+          "binaryPropertyName": "data"
+        }
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -576,
+        160
+      ],
+      "id": "4cadbcea-5565-43cd-903d-e2ed5699190d",
+      "name": "Download file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "YOUR_GOOGLE_DRIVE_CREDENTIAL_ID",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "fe3ebd4d-3a53-482b-ade4-ccb9d7fdc7cd",
+              "name": "work_type",
+              "value": "On-Site",
+              "type": "string"
+            },
+            {
+              "id": "ba47151c-6bca-4876-90ec-4c533acefd6b",
+              "name": "position_type",
+              "value": "={{ $json.body[\"What type of position are you applying for?\"] }}",
+              "type": "string"
+            },
+            {
+              "id": "d8b0b4f9-0c7b-4f5d-8a56-51aa02b34ed1",
+              "name": "=role",
+              "value": "={{ $json.body[\"Confirm the role you are applying for\"] || $json.body[\"Which role are you applying for?\"] }}",
+              "type": "string"
+            },
+            {
+              "id": "dad421e9-e59b-4a48-8336-0309c26100bd",
+              "name": "candidate_name",
+              "value": "={{ $json.body[\"Full Name\"] }}",
+              "type": "string"
+            },
+            {
+              "id": "531e1817-e615-4452-a66d-d08360bd07dc",
+              "name": "whatsapp",
+              "value": "={{ $json.body[\"WhatsApp Number\"] }}",
+              "type": "string"
+            },
+            {
+              "id": "8077c1c2-237e-403a-8afc-d0df939b7760",
+              "name": "email",
+              "value": "={{ $json.body[\"Email\"] }}",
+              "type": "string"
+            },
+            {
+              "id": "287ebbae-8067-4721-b73b-a3c9f28769a9",
+              "name": "city",
+              "value": "={{ $json.body[\"City\"] }}",
+              "type": "string"
+            },
+            {
+              "id": "f0919584-418f-414b-b17f-ffb0e5020b2e",
+              "name": "resume_url",
+              "value": "={{ $json.body[\"Upload Resume / CV\"] }}",
+              "type": "string"
+            },
+            {
+              "id": "56a9843c-e5a7-4ab7-9597-df2239947374",
+              "name": "source",
+              "value": "={{ $json.body[\"How did you hear about this job?\"] }}",
+              "type": "string"
+            },
+            {
+              "id": "f2521e23-de77-4d27-9b39-3f7f40726163",
+              "name": "date_applied",
+              "value": "={{ new Date($json.body[\"Timestamp\"]).toLocaleDateString('en-CA', { timeZone: 'Asia/Karachi' }) }}",
+              "type": "string"
+            },
+            {
+              "id": "be2a738c-b060-4030-93f6-b82808a2fc1b",
+              "name": "status",
+              "value": "Applied",
+              "type": "string"
+            },
+            {
+              "id": "38a12491-0a16-496d-a89a-80253278789e",
+              "name": "is_internship",
+              "value": "={{$json.body[\"What type of position are you applying for?\"] === \"Internship\"}}",
+              "type": "boolean"
+            },
+            {
+              "id": "d5a51d3d-c110-4fe7-a09c-8b8c538c80a2",
+              "name": "is_fulltime",
+              "value": "={{$json.body[\"What type of position are you applying for?\"] === \"Full-time Job\"}}",
+              "type": "boolean"
+            },
+            {
+              "id": "df087faa-63ac-4227-826e-44696ecd95d8",
+              "name": "form_data",
+              "value": "={{ $json.body }}",
+              "type": "object"
+            },
+            {
+              "id": "15641e19-9753-43af-96d0-5becb79055f5",
+              "name": "timestamp",
+              "value": "={{ new Date($json.body[\"Timestamp\"]).toLocaleString('sv-SE', { timeZone: 'Asia/Karachi' }).replace(' ', 'T') }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1200,
+        400
+      ],
+      "id": "cd67d779-7bb2-4ede-9fa2-6c0ebee6384d",
+      "name": "Normalize Form Data"
+    },
+    {
+      "parameters": {
+        "jsCode": "const link = $json[\"Upload Resume / CV\"] || $json.body?.[\"Upload Resume / CV\"] || \"\";\n\nlet fileId = null;\n\nconst match = link.match(/[-\\w]{25,}/);\n\nif (match) {\n  fileId = match[0];\n}\n\nreturn [{\n  json: {\n    ...$json,   // keep EVERYTHING exactly the same\n    fileId\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -736,
+        160
+      ],
+      "id": "9de9fd3a-564c-4f0e-9140-957ff68b31ca",
+      "name": "Extract Resume File ID"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.inomadigital.com/parse-resume",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "dzBeOpPa3myo35Q3dioWlHCGJqWyVTOMy"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "data"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -400,
+        160
+      ],
+      "id": "6981a7d6-fc52-40b3-b8d1-2f6c897254a0",
+      "name": "Resume Parser API",
+      "retryOnFail": true,
+      "waitBetweenTries": 3000,
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const original = $items(\"Download file\")[0].json;\nconst resume = $json.resume_text;\n\nreturn [\n{\njson: {\n...original,\nresume_text: resume\n}\n}\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -192,
+        160
+      ],
+      "id": "f41956b3-085b-4097-af83-b0ceece3e749",
+      "name": "Clean Resume Text"
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $json;\n\nconst answers = Object.entries(data.form_data || {})\n  .filter(([k,v]) => v && v !== \"\")\n  .map(([k,v]) => `${k}: ${v}`)\n  .join(\"\\n\");\n\nconst resume = (data.resume_text || \"\")\n  .replace(/\\(cid:\\d+\\)/g,\"\")\n  .replace(/\\s+/g,\" \")\n  .trim();\n\nconst profile = `\nCANDIDATE INFORMATION\nName: ${data.candidate_name ?? \"\"}\nCity: ${data.city ?? \"\"}\nRole Applied: ${data.role ?? \"\"}\n\nRESUME CONTENT\n${resume}\n\nCANDIDATE ANSWERS\n${answers}\n`;\n\nreturn [{\n  json: {\n    ...data,\n    candidate_profile: profile\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -672,
+        400
+      ],
+      "id": "63f390de-fa96-4051-9b8d-0f2a3aa012e0",
+      "name": "Build Candidate Context"
+    },
+    {
+      "parameters": {
+        "jsCode": "const prompt = `\nYou are an AI recruitment assistant.\n\nAnalyze this candidate and return ONLY valid JSON.\n\nDO NOT write explanations.\nDO NOT write text.\nRETURN JSON ONLY.\n\nRequired format:\n\n{\n \"score\": number from 0-100,\n \"strengths\": [\"strength1\",\"strength2\"],\n \"weaknesses\": [\"weakness1\",\"weakness2\"],\n \"recommendation\": \"Reject | Review | Interview\"\n}\n\nCandidate profile:\n\n${$json.candidate_profile}\n`;\n\nreturn [{\n  json: {\n    contents: [\n      {\n        parts: [\n          { text: prompt }\n        ]\n      }\n    ]\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -480,
+        400
+      ],
+      "id": "da96cead-5b20-411a-b505-4472607ca738",
+      "name": "Prepare Gemini Prompt"
+    },
+    {
+      "parameters": {
+        "jsCode": "let raw;\n\nif ($json.candidates && $json.candidates[0]?.content?.parts?.[0]?.text) {\n  raw = $json.candidates[0].content.parts[0].text;\n}\n\nlet result;\n\ntry {\n\n  if (raw) {\n    raw = raw.replace(/```json|```/g, '').trim();\n  }\n\n  result = raw ? JSON.parse(raw) : null;\n\n} catch {\n  result = null;\n}\n\nif (!result) {\n  result = {\n    score: 0,\n    strengths: [\"AI evaluation unavailable\"],\n    weaknesses: [\"AI evaluation unavailable\"],\n    recommendation: \"Review\"\n  };\n}\n\nreturn [\n  {\n    json: {\n      ai_score: result.score,\n      ai_strengths: result.strengths,\n      ai_weaknesses: result.weaknesses,\n      ai_recommendation: result.recommendation\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        64,
+        400
+      ],
+      "id": "f4f31379-920b-4f42-9938-1e24717ba542",
+      "name": "Parse AI JSON Response"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "4f047ae3-3846-42a1-9ee5-be589c0be3c4",
+              "name": "ai_score",
+              "value": "={{$json.ai_score ?? 0}}",
+              "type": "string"
+            },
+            {
+              "id": "927dadec-819c-4fc3-b77c-39e7b1ee344d",
+              "name": "ai_strengths",
+              "value": "={{$json.ai_strengths ?? [\"AI evaluation unavailable\"]}}",
+              "type": "array"
+            },
+            {
+              "id": "789ed21a-2031-4465-915d-52505888038b",
+              "name": "ai_weaknesses",
+              "value": "={{$json.ai_weaknesses ?? [\"AI evaluation unavailable\"]}}",
+              "type": "array"
+            },
+            {
+              "id": "c36e6d24-1d35-4b24-89d1-0f608db2d28a",
+              "name": "ai_recommendation",
+              "value": "={{$json.ai_recommendation ?? \"Review\"}}\n",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        256,
+        400
+      ],
+      "id": "2f71a536-944a-492c-93b1-8bf82ab50b64",
+      "name": "Store AI Results"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "96a05fdb-e8aa-47b8-ae08-b5811a67ec69",
+              "name": "page_id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -160,
+        624
+      ],
+      "id": "9be67e48-9ded-4158-8234-d5843b3a9b81",
+      "name": "Get Notion Page ID"
+    },
+    {
+      "parameters": {
+        "resource": "block",
+        "blockId": {
+          "__rl": true,
+          "value": "={{ $json.page_id }}",
+          "mode": "id"
+        },
+        "blockUi": {
+          "blockValues": [
+            {
+              "type": "heading_3",
+              "textContent": "🧾 Basic Information"
+            },
+            {
+              "textContent": "=Name: {{ $('Normalize Form Data').item.json.candidate_name }} \nEmail: {{ $('Normalize Form Data').item.json.email }} \nWhatsApp: {{ $('Normalize Form Data').item.json.whatsapp }} \nCity: {{ $('Normalize Form Data').item.json.city }} \nSource: {{ $('Normalize Form Data').item.json.source }} \n\nApplied On: {{ $('Normalize Form Data').item.json.date_applied }}  \nRole Applied: {{ $('Normalize Form Data').item.json.role }} \nPosition Type: {{ $('Normalize Form Data').item.json.position_type }} \nWorking Mode: {{ $('Normalize Form Data').item.json.work_type }}"
+            },
+            {
+              "type": "heading_3",
+              "textContent": "📎 Resume"
+            },
+            {
+              "richText": true,
+              "text": {
+                "text": [
+                  {
+                    "text": "View Resume",
+                    "isLink": true,
+                    "textLink": "={{ $('Normalize Form Data').item.json.resume_url }}",
+                    "annotationUi": {}
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        48,
+        624
+      ],
+      "id": "4c638bb0-2c63-499d-8502-a479e54b86af",
+      "name": "Append Basic Candidate Info",
+      "credentials": {
+        "notionApi": {
+          "id": "YOUR_NOTION_CREDENTIAL_ID",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "block",
+        "blockId": {
+          "__rl": true,
+          "value": "={{ $('Create a database page').item.json.id }}",
+          "mode": "id"
+        },
+        "blockUi": {
+          "blockValues": [
+            {
+              "type": "heading_3",
+              "textContent": "💼 Job Details"
+            },
+            {
+              "textContent": "=When Start: {{ $('Normalize Form Data').item.json.form_data[\"When can you start if selected?\"] || \"Not Provided\" }}\nOne Year Commitment: {{ $('Normalize Form Data').item.json.form_data[\"Are you comfortable committing to at least 1 year with the company?\"] || \"Not Provided\" }}\nMin Salary: {{ $('Normalize Form Data').item.json.form_data[\"Minimum monthly salary expectancy\"] || \"Not Provided\" }}\nMax Salary: {{ $('Normalize Form Data').item.json.form_data[\"Maximum monthly salary expectancy\"] || \"Not Provided\" }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        432,
+        832
+      ],
+      "id": "24407c9b-2f22-4c22-9564-4ee7450f2548",
+      "name": "Append Job Questions",
+      "credentials": {
+        "notionApi": {
+          "id": "YOUR_NOTION_CREDENTIAL_ID",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $node[\"Normalize Form Data\"].json.form_data;\n\n// Fields that should NEVER appear in Role Questions\nconst excludedFields = [\n\"Timestamp\",\n\"Full Name\",\n\"Email\",\n\"WhatsApp Number\",\n\"City\",\n\"Upload Resume / CV\",\n\"How did you hear about this job?\",\n\"What type of position are you applying for?\",\n\"Confirm the role you are applying for\",\n\"When can you start if selected?\",\n\"Are you comfortable committing to at least 1 year with the company?\",\n\"Minimum monthly salary expectancy\",\n\"Maximum monthly salary expectancy\",\n\"Are you currently a student or a recent graduate?\",\n\"Are you available to work from our office on a daily basis?\",\n\"Are you willing to commit to a minimum 3 month internship?\"\n];\n\nlet answers = [];\nlet additionalNotes = \"\";\n\n// URL detection\nconst urlRegex = /(https?:\\/\\/[^\\s]+)/g;\n\nObject.keys(data).forEach(key => {\n\n  if (\n    !excludedFields.includes(key) &&\n    data[key] !== \"\" &&\n    data[key] !== null &&\n    data[key] !== undefined &&\n    typeof data[key] !== \"object\"\n  ) {\n\n    let value = data[key].toString().trim();\n\n    // Normalize paragraph spacing\n    value = value\n      .replace(/\\r?\\n+/g, \" \")   // remove line breaks\n      .replace(/\\s+/g, \" \")      // collapse multiple spaces\n      .trim();\n\n    // Format links on separate lines\n    if (urlRegex.test(value)) {\n      value = value.replace(urlRegex, \"\\n$1\");\n    }\n\n    if (key.toLowerCase().includes(\"anything else\")) {\n\n      additionalNotes = `\\n\\n• Additional Notes\\n${value}`;\n\n    } else {\n\n      answers.push(`• ${key}\\n${value}`);\n\n    }\n\n  }\n\n});\n\nconst roleText = answers.join(\"\\n\\n\") + additionalNotes;\n\n\n// SAFE SPLITTING FOR NOTION\nconst MAX = 1800;\nconst blocks = roleText.split(\"\\n\\n• \").map((b, i) => i === 0 ? b : \"• \" + b);\n\nlet chunks = [];\nlet current = \"\";\n\nfor (const block of blocks) {\n\n  if ((current + \"\\n\\n\" + block).length > MAX) {\n    chunks.push(current.trim());\n    current = block;\n  } else {\n    current += \"\\n\\n\" + block;\n  }\n\n}\n\nif (current) {\n  chunks.push(current.trim());\n}\n\nreturn chunks.map(chunk => ({\n  json: {\n    chunk\n  }\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        624,
+        832
+      ],
+      "id": "b64b7652-0a18-4d1b-a438-90249b4437b5",
+      "name": "Format Candidate Answers"
+    },
+    {
+      "parameters": {
+        "resource": "block",
+        "blockId": {
+          "__rl": true,
+          "value": "={{ $('Get Notion Page ID').item.json.page_id }}",
+          "mode": "id"
+        },
+        "blockUi": {
+          "blockValues": [
+            {
+              "richText": true,
+              "text": {
+                "text": [
+                  {
+                    "text": "={{ $json.chunk }}",
+                    "annotationUi": {}
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        896,
+        976
+      ],
+      "id": "7acd5796-acca-4852-b1e4-4e4fda1348f7",
+      "name": "Append Candidate Answers",
+      "credentials": {
+        "notionApi": {
+          "id": "YOUR_NOTION_CREDENTIAL_ID",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "block",
+        "blockId": {
+          "__rl": true,
+          "value": "={{$node[\"Create a database page\"].json.id}}",
+          "mode": "id"
+        },
+        "blockUi": {
+          "blockValues": [
+            {
+              "type": "heading_3",
+              "textContent": "🤖 AI Candidate Evaluation"
+            },
+            {
+              "textContent": "=Score: {{$node[\"Store AI Results\"].json.ai_score}} / 100\nRecommendation: {{$node[\"Store AI Results\"].json.ai_recommendation}}\n• Strengths: \n{{$node[\"Store AI Results\"].json.ai_strengths.join(\", \")}}\n\n• Weaknesses: \n{{$node[\"Store AI Results\"].json.ai_weaknesses.join(\", \")}}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        1472,
+        672
+      ],
+      "id": "31bc1fbc-834a-4e77-bdfe-e5027d1d9aa0",
+      "name": "Append AI Evaluation1",
+      "credentials": {
+        "notionApi": {
+          "id": "YOUR_NOTION_CREDENTIAL_ID",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -576,
+        624
+      ],
+      "id": "dd831fee-ed3b-4921-9f15-fa8439d076d7",
+      "name": "Merge Candidate Data"
+    },
+    {
+      "parameters": {
+        "jsCode": "const strengths = $json.ai_strengths || [];\nconst weaknesses = $json.ai_weaknesses || [];\n\nconst strengthBlocks = strengths.map(s => ({\n  type: \"bulleted_list_item\",\n  bulleted_list_item: {\n    rich_text: [\n      {\n        type: \"text\",\n        text: { content: s }\n      }\n    ]\n  }\n}));\n\nconst weaknessBlocks = weaknesses.map(w => ({\n  type: \"bulleted_list_item\",\n  bulleted_list_item: {\n    rich_text: [\n      {\n        type: \"text\",\n        text: { content: w }\n      }\n    ]\n  }\n}));\n\nreturn [{\n  json: {\n    ...$json,\n    strength_blocks: strengthBlocks,\n    weakness_blocks: weaknessBlocks\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1296,
+        672
+      ],
+      "id": "9119e31e-178d-41a9-a075-5c261eca6e94",
+      "name": "Format AI Bullets1"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -304,
+        400
+      ],
+      "id": "59166d97-6d24-432c-ae9b-8138db5403bc",
+      "name": "Wait1",
+      "webhookId": "31477665-9c9b-4d88-bb19-00cd789dad72"
+    },
+    {
+      "parameters": {
+        "resource": "block",
+        "blockId": {
+          "__rl": true,
+          "value": "={{ $('Get Notion Page ID').item.json.page_id }}",
+          "mode": "id"
+        },
+        "blockUi": {
+          "blockValues": [
+            {
+              "type": "heading_3",
+              "textContent": "⭕️ Role Questions"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        896,
+        800
+      ],
+      "id": "e37da36c-86e6-4cf9-a5c5-d90df727596b",
+      "name": "Append Role Heading",
+      "executeOnce": true,
+      "alwaysOutputData": false,
+      "credentials": {
+        "notionApi": {
+          "id": "YOUR_NOTION_CREDENTIAL_ID",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "chooseBranch",
+        "useDataOfInput": 2
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1120,
+        880
+      ],
+      "id": "82bcccfe-9250-4e03-bc85-a219a3c0db05",
+      "name": "Merge"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Is Internship": {
+      "main": [
+        [
+          {
+            "node": "Internship Append",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Append Job Questions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a database page": {
+      "main": [
+        [
+          {
+            "node": "Get Notion Page ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Links for Drive": {
+      "main": [
+        [
+          {
+            "node": "Change Drive Files Permissions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Change Drive Files Permissions": {
+      "main": [
+        []
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Normalize Form Data",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Process Links for Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Internship Append": {
+      "main": [
+        [
+          {
+            "node": "Format AI Bullets1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Evaluation": {
+      "main": [
+        [
+          {
+            "node": "Parse AI JSON Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file": {
+      "main": [
+        [
+          {
+            "node": "Resume Parser API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Form Data": {
+      "main": [
+        [
+          {
+            "node": "Extract Resume File ID",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge Candidate Data",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Extract Resume File ID": {
+      "main": [
+        [
+          {
+            "node": "Download file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resume Parser API": {
+      "main": [
+        [
+          {
+            "node": "Clean Resume Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean Resume Text": {
+      "main": [
+        [
+          {
+            "node": "Build Candidate Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Candidate Context": {
+      "main": [
+        [
+          {
+            "node": "Prepare Gemini Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Gemini Prompt": {
+      "main": [
+        [
+          {
+            "node": "Wait1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse AI JSON Response": {
+      "main": [
+        [
+          {
+            "node": "Store AI Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store AI Results": {
+      "main": [
+        [
+          {
+            "node": "Merge Candidate Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Notion Page ID": {
+      "main": [
+        [
+          {
+            "node": "Append Basic Candidate Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append Basic Candidate Info": {
+      "main": [
+        [
+          {
+            "node": "Is Internship",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append Job Questions": {
+      "main": [
+        [
+          {
+            "node": "Format Candidate Answers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Candidate Answers": {
+      "main": [
+        [
+          {
+            "node": "Append Role Heading",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Append Candidate Answers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append Candidate Answers": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Candidate Data": {
+      "main": [
+        [
+          {
+            "node": "Create a database page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format AI Bullets1": {
+      "main": [
+        [
+          {
+            "node": "Append AI Evaluation1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait1": {
+      "main": [
+        [
+          {
+            "node": "Gemini Evaluation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append Role Heading": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Format AI Bullets1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false,
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "YOUR_VERSION_ID",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "YOUR_INSTANCE_ID"
+  },
+  "id": "YOUR_WORKFLOW_ID",
+  "tags": []
+}
