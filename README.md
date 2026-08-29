@@ -115,11 +115,14 @@ Applicant submits at inomadigital.com/apply
 ### Notion Candidate Database
 ![Notion Database](screenshots/notion-database.png)
 
+### Candidate Property Page
+![Notion Candidate Page](screenshots/notion-candidate-page.png)
+
 ### Candidate Profile — Full-time
-![Notion Entry Full-time](screenshots/notion-entry-fulltime.png)
+![Notion Entry Full-time](screenshots/notion-fulltime-candidate.png)
 
 ### Candidate Profile — Internship
-![Notion Entry Internship](screenshots/notion-entry-internship.png)
+![Notion Entry Internship](screenshots/notion-internship-candidate.png)
 
 ---
 
@@ -191,8 +194,9 @@ hirescout/
 │   ├── workflow-overview.png
 │   ├── gemini-node.png
 │   ├── notion-database.png
-│   ├── notion-entry-fulltime.png
-│   └── notion-entry-internship.png
+│   ├── notion-candidate-page.png
+│   ├── notion-fulltime-candidate.png
+│   └── notion-internship-candidate.png
 └── docs/
     ├── SETUP.md
     └── ARCHITECTURE.md
